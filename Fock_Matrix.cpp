@@ -19,7 +19,7 @@ std::vector<AO> atoms_to_AOs(const std::vector<Atom> &Atoms) {
         for (auto &cGTO: atom.cGTOs) {
             // just need to take angular momentum of ONE of the primitive Gaussians in a cGTO
             int L = cGTO.primGs[0].L; // will tell me if I have an s or a p orbital
-            AO AO_to_append = {atomic_num, L, cGTO};
+            AO AO_to_append = {atomic_num, L, atom, cGTO};
             AOs.push_back(AO_to_append);
         }
     }
@@ -28,121 +28,149 @@ std::vector<AO> atoms_to_AOs(const std::vector<Atom> &Atoms) {
 
 }
 
-// Diagonal matrix elements of one-electron Hamiltonian matrix; currently only works for 2 atoms
-double h_uu(int u, Atom A, std::vector<Atom> atoms) {
+// Counting number of electrons
 
-    Atom B = atoms[1];
+int count_total_electrons(const std::vector<Atom> &Atoms) {
 
-    double term1=0;
-    if (A.A == 1) { // if we have an H atom
-        term1 = A.IA_s;
-    } else { // if have any other atom - C, N, O, F
-        if (A.cGTOs[u].primGs[0].L == 0) { // s orbital
-            term1 = A.IA_s;
-        } else if (A.cGTOs[u].primGs[0].L == 1) { // p orbital
-            term1 = A.IA_p;
+    // Here, n is the total number of electrons provided by atomic orbitals of the atoms
+    int n = 0;
+    for (auto &atom: Atoms) {
+        if (atom.A == 1) { // H atom
+            n += 1;
+        } else { // C, N, O, or F atom
+            n += atom.Z_;
         }
     }
-
-
-    double term2 = (A.Z_ - 0.5)* gamma_AB(A,A);
-
-    // This is the part that makes it work for only two-atom molecules
-    double term3 = B.Z_* gamma_AB(A,B);
-
-    return -term1-term2-term3;
-
+    return n;
 }
 
-// Off-diagonal matrix elements of 1-electron core hamiltonian
-double h_uv(int u, int v, Atom A, std::vector<Atom> atoms) {
+int count_alpha_electrons(const std::vector<Atom> &Atoms) {
+    int n = count_total_electrons(Atoms);
+    return ceil(n/2);
+}
 
-    Atom B = atoms[1];
-
-    double S_ele = S_uv(A.cGTOs[u],B.cGTOs[v]);
-
-    return 0.5*(A.beta+B.beta)*S_ele;
-
+int count_beta_electrons(const std::vector<Atom> &Atoms) {
+    int n = count_total_electrons(Atoms);
+    return floor(n/2);
 }
 
 
+
+// One-electron Hamiltonian
 arma::mat h(std::vector<Atom> atoms) {
 
-    Atom A = atoms[0];
-    Atom B = atoms[1];
+    std::vector<AO> AOs = atoms_to_AOs(atoms);
 
-    // # of AOs = size of Hamiltonian matrix
-    int matrix_size = atoms_to_AOs(atoms).size();
+    // initializing appropriately sized matrix
+    arma::mat final_h(AOs.size(), AOs.size(), arma::fill::zeros);
 
-    // Initialize a matrix of the appropriate size, just filled with zeroes
-    arma::mat h(matrix_size, matrix_size, arma::fill::zeros);
+    // Diagonal matrix elements
+    double term1, term2, term3;
+    int i=0; // to keep the index
+    for (auto& AO : AOs) {
+        // Reset values of all terms on each iteration
+        term1=0, term2=0, term3=0;
 
+        Atom atom = AO.origin_atom; // atom corresponding to the AO
 
-    // Input diagonal components first
-    for (size_t i = 0; i < matrix_size; i++) {
-        Atom focus_atom = atoms[i];
-        h(i,i) = h_uu(i, focus_atom, atoms);
+        // term2, term3 the same—only dependent on atom, not also the orbital
+        term2 = (atom.Z_ - 0.5)* gamma_AB(atom, atom);
+        for (auto& atom2 : atoms) {
+            term3 += atom2.Z_*gamma_AB(atom,atom2);
+        }
+        term3 -= atom.Z_*gamma_AB(atom,atom); // get rid of the unnecessary term from for loop above
+
+        // term1 is a bit more complicated, we need to care about the orbital angular momentum too (s or p)
+        if (AO.L == 0) { // the AO we're on is an s AO
+            term1 = atom.IA_s;
+        } else if (AO.L == 1) { // the AO we're on is a p AO (L=1)
+            term1 = atom.IA_p;
+        }
+
+        final_h(i,i) = -term1-term2-term3;
+
+        i += 1;
     }
 
-    // Then add off-diagonals
-    for (size_t i = 0; i < matrix_size; i++) {
-        for (size_t j = 0; j < matrix_size; j++) {
-            if (i != j) {
-                Atom focus_atom = atoms[i];
-                h(i, j) = h_uv(i,j,focus_atom,atoms);
+
+    // Now the off-diagonal matrix elements
+    for (int u=0; u < AOs.size(); u++) {
+        AO AO_1 = AOs[u];
+
+        for (int v=0; v < AOs.size(); v++) {
+            AO AO_2 = AOs[v];
+            if (u != v) { // off-diagonals only
+                double S_ele = S_uv(AO_1.cGTO,AO_2.cGTO);
+                final_h(u,v) = 0.5*(AO_1.origin_atom.beta + AO_2.origin_atom.beta)*S_ele;
             }
         }
     }
 
-    return h;
+    return final_h;
 
 }
 
 
-// Matrix elements of alpha (or beta) density matrix only
-double p_uv_alpha(int u, int v, arma::mat c, int num_electrons) {
 
-    // num electrons is p (alpha) or q (beta)
-    // assumes c is ordered such that lowest energy orbitals have lower indices
 
-    double sum = 0;
-    for (int i = 0; i < num_electrons; i++) {
-        double val = c(u, i) * c(v, i);
-        sum += val;
-    }
-    return sum;
-}
+// Overlap Matrix
 
-// Full P_alpha matrix
-arma::mat p_uv_alpha_matrix(arma::mat c, int num_electrons) {
+arma::mat S(const std::vector<Atom> &Atoms) {
 
-    int matrix_size = c.size();
+    std::vector<AO> AOs = atoms_to_AOs(Atoms);
+    int matrix_size = AOs.size();
 
     // Initialize a matrix of the appropriate size, just filled with zeroes
-    arma::mat final_mat(matrix_size, matrix_size, arma::fill::zeros);
+    arma::mat S(matrix_size, matrix_size, arma::fill::zeros);
 
     // Iterate through indices in matrix, computing appropriate overlap integral!
     for (size_t i = 0; i < matrix_size; i++) {
+        //std::cout<< i<< std::endl;
         for (size_t j = 0; j < matrix_size; j++) {
-            final_mat(i, j) = p_uv_alpha(i,j,c,num_electrons);
+            double Sij = S_uv(AOs[i].cGTO, AOs[j].cGTO);
+            S(i, j) = Sij;
+            //std::cout<< i <<j<< std::endl;
+            //S.print();
         }
     }
 
+    return S;
+}
+
+
+
+
+
+
+// Density Matrix
+
+// Let's just try calculating the density the matrix more simply from the OCCUPIED coefficient matrices:
+// Getting the occupied coefficient matrix from a total coefficient matrix
+arma::mat C_occ_alpha(arma::mat c_alpha, int p) {
+    // p is the number of alpha electrons here
+
+    int num_rows = sqrt(c_alpha.size()); // since the size of a matrix is the total # of elements, and c_alpha is always square
+
+    // Initialize appropriately sized matrix
+    arma::mat final_mat(num_rows, p, arma::fill::zeros);
+
+    // slice the c_alpha square matrix into a rectangular matrix, just selecting the first p columns
+    for (size_t j=0; j < p; j++) {
+        for (size_t i=0; i < num_rows; i++) {
+            final_mat(i,j) = c_alpha(i,j);
+        }
+    }
     return final_mat;
-
 }
 
-// Matrix elements of total density matrix
-double p_uv_tot(int u, int v, arma::mat &c_alpha, arma::mat &c_beta, int p, int q) {
-
-    double val1 = p_uv_alpha(u, v, c_alpha, p);
-    double val2 = p_uv_alpha(u, v, c_beta, q);
-
-    return val1 + val2;
+arma::mat P_alpha(arma::mat c_occ_alpha) {
+    // Simply the occupied coefficient matrix times its transpose!
+    return c_occ_alpha*c_occ_alpha.t();
 }
 
-// total electron density on one atom—the sum of diagonal total matrix elements
-arma::vec p_AA(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_beta){
+
+// Total electron density on one atom—the sum of diagonal total matrix elements
+arma::vec P_AA(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_beta){
 
     // First get the total density matrix
     arma::mat P_tot = P_alpha + P_beta;
@@ -152,7 +180,7 @@ arma::vec p_AA(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_be
 
     double sum=0;
     // Assumes order of "atoms" vector corresponds to density matrix AO order
-    size_t i =0;
+    int i =0;
     while (i < atoms.size()) {
         if (atoms[i].A == 1) { // if you're dealing with a Hydrogen atom as the atom you're at
             final_vec(i) = P_tot(i,i);
@@ -171,6 +199,8 @@ arma::vec p_AA(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_be
 
 
 
+
+// Gamma Calculation
 
 double zero_zero_integral(Atom A, Atom B, int k, int k_prime, int l, int l_prime) {
 
@@ -257,52 +287,12 @@ arma::mat gamma_matrix(std::vector<Atom> atoms) {
 }
 
 
-arma::mat S(const std::vector<Atom> &Atoms) {
 
-    std::vector<AO> AOs = atoms_to_AOs(Atoms);
-    int matrix_size = AOs.size();
 
-    // Initialize a matrix of the appropriate size, just filled with zeroes
-    arma::mat S(matrix_size, matrix_size, arma::fill::zeros);
 
-    // Iterate through indices in matrix, computing appropriate overlap integral!
-    for (size_t i = 0; i < matrix_size; i++) {
-        //std::cout<< i<< std::endl;
-        for (size_t j = 0; j < matrix_size; j++) {
-            double Sij = S_uv(AOs[i].cGTO, AOs[j].cGTO);
-            S(i, j) = Sij;
-            //std::cout<< i <<j<< std::endl;
-            //S.print();
-        }
-    }
 
-    return S;
-}
 
-int count_total_electrons(const std::vector<Atom> &Atoms) {
-
-    // Here, n is the total number of electrons provided by atomic orbitals of the atoms
-    int n = 0;
-    for (auto &atom: Atoms) {
-        if (atom.A == 1) { // H atom
-            n += 1;
-        } else { // C, N, O, or F atom
-            n += atom.Z_;
-        }
-    }
-    return n;
-}
-
-int count_alpha_electrons(const std::vector<Atom> &Atoms) {
-    int n = count_total_electrons(Atoms);
-    return ceil(n/2);
-}
-
-int count_beta_electrons(const std::vector<Atom> &Atoms) {
-    int n = count_total_electrons(Atoms);
-    return floor(n/2);
-}
-
+// Fock matrix construction
 
 // Current implementation only works for two-atom molecules
 double f_uu_alpha(int u, Atom A, Atom B, arma::mat P_alpha, arma::mat P_beta, int num_electrons) {
@@ -319,11 +309,77 @@ double f_uu_alpha(int u, Atom A, Atom B, arma::mat P_alpha, arma::mat P_beta, in
     // Compile atoms A and B into a standard vector for formatting compatibility
     std::vector<Atom> atoms = {A,B};
 
-    double term2 = ((p_AA(atoms, P_alpha, P_beta)[u] - A.Z_) - (P_alpha(u,u) - 0.5))*gamma_AB(A,A);
+    double term2 = ((P_AA(atoms, P_alpha, P_beta)[u] - A.Z_) - (P_alpha(u,u) - 0.5))*gamma_AB(A,A);
 
     // This is the part that makes it work for only two-atom molecules
-    double term3 = (p_AA(atoms, P_alpha, P_beta)[u] - B.Z_)*gamma_AB(A,B);
+    double term3 = (P_AA(atoms, P_alpha, P_beta)[u] - B.Z_)*gamma_AB(A,B);
 
     return -term1+term2+term3;
+
+}
+
+
+arma::mat F_alpha(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_beta) {
+
+    std::vector<AO> AOs = atoms_to_AOs(atoms);
+
+    // initializing appropriately sized matrix
+    arma::mat final_F(AOs.size(), AOs.size(), arma::fill::zeros);
+
+    // Diagonal matrix elements
+    double term1, term2, term3;
+    int i=0; // to keep the index of the AOs (which is same as row/column index of diagonal elements of F matrix)
+    int j=0; // keep track of atom index
+    for (auto& AO : AOs) {
+        // Reset values of all terms on each iteration
+        term1=0, term2=0, term3=0;
+
+        Atom atom = AO.origin_atom; // atom corresponding to the AO
+
+        // term2, term3 only depend on the AO and the atom, not the L of the AO
+
+        // P_AA is a VECTOR of electron density per ATOM ... so the question is, which NUMBER atom are we on??
+        term2 = ((P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom.Z_) - (P_alpha(i,i) - 0.5))*gamma_AB(atom,atom); // indexing problem is with P_AA - which number atom are we on???
+        for (auto& atom2 : atoms) {
+            term3 += (P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom2.Z_)*gamma_AB(atom,atom2);
+        }
+        term3 -= (P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom.Z_)*gamma_AB(atom,atom);; // get rid of the unnecessary term from for loop above
+
+        // term1 is a bit more complicated, we need to care about the orbital angular momentum too (s or p)
+        if (AO.L == 0) { // the AO we're on is an s AO
+            term1 = atom.IA_s;
+        } else if (AO.L == 1) { // the AO we're on is a p AO (L=1)
+            term1 = atom.IA_p;
+        }
+
+        final_F(i,i) = -term1+term2+term3;
+
+        // j index tracks the atom we're on
+        // if we just looked at H atom, then we go to the NEXT atom (b/c H will only have 1 AO)
+        // if we just looked at C,N,O,F, then we go to the next AO, but stay at the same atom (so just add 1/4 to j, so that after 4 runs, we would be at the next atom!)
+        j += 1 / atom.cGTOs.size();
+
+        // i index tracks the AO we're on
+        i += 1;
+    }
+
+
+    // Now the off-diagonal matrix elements
+    for (int u=0; u < AOs.size(); u++) {
+        AO AO_1 = AOs[u];
+        Atom atom_1 = AO_1.origin_atom;
+
+        for (int v=0; v < AOs.size(); v++) {
+            AO AO_2 = AOs[v];
+            Atom atom_2 = AO_2.origin_atom;
+
+            if (u != v) { // off-diagonals only
+                double S_ele = S_uv(AO_1.cGTO,AO_2.cGTO);
+                final_F(u,v) = 0.5*(AO_1.origin_atom.beta + AO_2.origin_atom.beta)*S_ele - P_alpha(u,v)*gamma_AB(atom_1, atom_2);
+            }
+        }
+    }
+
+    return final_F;
 
 }

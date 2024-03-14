@@ -10,7 +10,10 @@ add_executable(HW4
         Fock_Matrix.cpp
         Fock_Matrix.h
         Overlap_Integrals.cpp
-        Overlap_Integrals.h)
+        Overlap_Integrals.h
+        Diag_Conv.cpp
+        Diag_Conv.h
+        Diag_Conv.h)
 
 include_directories(/Users/sahandadibnia/armadillo-12.6.7/include)
 
