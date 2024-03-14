@@ -34,17 +34,23 @@ int main() {
     std::string path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/H2.txt";
     std::vector<Atom> H2_Atoms = read_atoms_from_file(path);
     arma::mat H2_gamma = gamma_matrix(H2_Atoms);
-    H2_gamma.print();
+    //H2_gamma.print();
 
-    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HF.txt";
-    std::vector<Atom> HF_Atoms = read_atoms_from_file(path);
-    arma::mat HF_gamma = gamma_matrix(HF_Atoms);
-    HF_gamma.print();
+    arma::mat H2_S = S(H2_Atoms);
+    //H2_S.print();
 
-    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HO.txt";
-    std::vector<Atom> HO_Atoms = read_atoms_from_file(path);
-    arma::mat HO_gamma = gamma_matrix(HO_Atoms);
-    HO_gamma.print();
+    arma::mat H2_H_core = h(H2_Atoms);
+    H2_H_core.print();
+
+//    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HF.txt";
+//    std::vector<Atom> HF_Atoms = read_atoms_from_file(path);
+//    arma::mat HF_gamma = gamma_matrix(HF_Atoms);
+//    HF_gamma.print();
+//
+//    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HO.txt";
+//    std::vector<Atom> HO_Atoms = read_atoms_from_file(path);
+//    arma::mat HO_gamma = gamma_matrix(HO_Atoms);
+//    HO_gamma.print();
 
 
     return 0;
