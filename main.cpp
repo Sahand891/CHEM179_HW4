@@ -52,8 +52,8 @@ int main() {
     int p = count_alpha_electrons(H2_Atoms);
     int q = count_beta_electrons(H2_Atoms);
 
-    std::cout << "p = " << p << std::endl;
-    std::cout << "q = " << q << std::endl;
+    //std::cout << "p = " << p << std::endl;
+    //std::cout << "q = " << q << std::endl;
 
     arma::mat H2_C_occ_alpha_1 = C_occ_alpha(H2_C_alpha_1, p);
     //H2_C_occ_alpha_1.print();
@@ -84,15 +84,23 @@ int main() {
 
     // Compare new vs old density matrices
     arma::mat H2_C_occ_alpha_2 = C_occ_alpha(H2_C_alpha_2, p);
-    arma::mat H2_P_alpha_new = P_alpha(H2_C_occ_alpha_1);
+    arma::mat H2_P_alpha_new = P_alpha(H2_C_occ_alpha_2);
     //H2_P_alpha.print();
-    arma::mat H2_C_occ_beta_2 = C_occ_alpha(H2_C_beta_2, p);
+    arma::mat H2_C_occ_beta_2 = C_occ_alpha(H2_C_beta_2, q);
     arma::mat H2_P_beta_new = P_alpha(H2_C_occ_beta_2);
     //H2_P_beta.print();
 
-    // Confirming that covergence is acheived!!!!
-    (H2_P_alpha_new - H2_P_alpha).print();
-    (H2_P_beta_new - H2_P_beta).print();
+    // Confirming that covergence is acheived (after just one iteration lol)!!!!
+    //(H2_P_alpha_new - H2_P_alpha).print();
+    //(H2_P_beta_new - H2_P_beta).print();
+
+
+
+    //iteration_data H2_initial_it_data = start_CNDO2(H2_Atoms);
+    //iteration_data H2_conv_it_data = converge_CNDO2(H2_initial_it_data);
+
+
+
 
 
     // Now let's compute the energies
@@ -109,6 +117,9 @@ int main() {
 
     arma::mat HF_H_core = h(HF_Atoms);
     //HF_H_core.print();
+
+    iteration_data HF_initial_it_data = start_CNDO2(HF_Atoms);
+    iteration_data HF_conv_it_data = converge_CNDO2(HF_initial_it_data);
 
 
 
