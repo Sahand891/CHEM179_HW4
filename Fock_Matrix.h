@@ -36,7 +36,7 @@ arma::mat gamma_matrix(std::vector<Atom> atoms);
 // Compute overlap matrix from a vector of atoms
 arma::mat S(const std::vector<Atom> &Atoms);
 
-// Compute a core, 1-electron Hamiltonian; currently only works for two atoms
+// Compute a core, 1-electron Hamiltonian
 arma::mat h(const std::vector<Atom> &atoms);
 
 
@@ -51,9 +51,6 @@ arma::vec P_AA(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_be
 // Fock matrix for alpha electrons
 arma::mat F_alpha(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_beta);
 
-
-// Only works for two atoms
-double f_uu_alpha(int u, int v, Atom A, Atom B, arma::mat c_alpha, arma::mat c_beta, int num_electrons);
 
 
 

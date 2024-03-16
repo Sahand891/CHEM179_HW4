@@ -299,31 +299,6 @@ arma::mat gamma_matrix(std::vector<Atom> atoms) {
 
 // Fock matrix construction
 
-// Current implementation only works for two-atom molecules
-double f_uu_alpha(int u, Atom A, Atom B, arma::mat P_alpha, arma::mat P_beta, int num_electrons) {
-
-    // u is the index of the matrix = the index of the atomic orbital we're looking at
-
-    double term1=0;
-    if (A.cGTOs[u].primGs[0].L == 0) { // s orbital
-        term1 = A.IA_s;
-    } else if (A.cGTOs[u].primGs[0].L == 1) { // p orbital
-        term1 = A.IA_p;
-    }
-
-    // Compile atoms A and B into a standard vector for formatting compatibility
-    std::vector<Atom> atoms = {A,B};
-
-    double term2 = ((P_AA(atoms, P_alpha, P_beta)[u] - A.Z_) - (P_alpha(u,u) - 0.5))*gamma_AB(A,A);
-
-    // This is the part that makes it work for only two-atom molecules
-    double term3 = (P_AA(atoms, P_alpha, P_beta)[u] - B.Z_)*gamma_AB(A,B);
-
-    return -term1+term2+term3;
-
-}
-
-
 arma::mat F_alpha(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P_beta) {
 
     std::vector<AO> AOs = atoms_to_AOs(atoms);
