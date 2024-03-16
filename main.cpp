@@ -18,13 +18,13 @@ int main() {
     std::vector<iteration_data> empty_vect;
 
     // Read in a vector of atoms (in a molecule) from an appropriately formatted text file
-    std::string path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/H2.txt";
+    std::string path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao_HW4/sample_input/H2.txt";
     std::vector<Atom> H2_Atoms = read_atoms_from_file(path);
 
-    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HF.txt";
+    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao_HW4/sample_input/HF.txt";
     std::vector<Atom> HF_Atoms = read_atoms_from_file(path);
 
-    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao/HW4/sample_input/HO.txt";
+    path = "/Users/sahandadibnia/homeworks/CHEM 179/Homework/HW4/Xiao_HW4/sample_input/HO.txt";
     std::vector<Atom> HO_Atoms = read_atoms_from_file(path);
 
 
