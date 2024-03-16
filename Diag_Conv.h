@@ -33,7 +33,7 @@ struct iteration_data {
     int iteration_count;
 
     // check for convergence just based on alpha density matrix
-    bool converged = arma::approx_equal(P_alpha_new,P_alpha_old,"absdiff",1e-3);
+    bool converged = arma::approx_equal(P_alpha_new,P_alpha_old,"absdiff",1e-6);
 
     // Other information in case we need it
     arma::vec P_total_new = P_AA(atoms, P_alpha_new, P_beta_new);
@@ -48,10 +48,16 @@ struct iteration_data {
 
 
 arma::mat find_MO_coefs(arma::mat F);
+arma::vec get_energy_eigs(arma::mat F);
 
 
 iteration_data start_CNDO2(const std::vector<Atom> &atoms);
 iteration_data converge_CNDO2(const iteration_data &it_data);
+
+
+
+double nuc_repl_energy(const std::vector<Atom> &atoms);
+double electron_repl_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core);
 
 
 

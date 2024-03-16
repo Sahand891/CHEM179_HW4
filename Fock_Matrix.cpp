@@ -46,18 +46,18 @@ int count_total_electrons(const std::vector<Atom> &Atoms) {
 
 int count_alpha_electrons(const std::vector<Atom> &Atoms) {
     int n = count_total_electrons(Atoms);
-    return ceil(n/2);
+    return ceil(n/2.0);
 }
 
 int count_beta_electrons(const std::vector<Atom> &Atoms) {
     int n = count_total_electrons(Atoms);
-    return floor(n/2);
+    return floor(n/2.0);
 }
 
 
 
 // One-electron Hamiltonian
-arma::mat h(std::vector<Atom> atoms) {
+arma::mat h(const std::vector<Atom> &atoms) {
 
     std::vector<AO> AOs = atoms_to_AOs(atoms);
 
@@ -74,7 +74,7 @@ arma::mat h(std::vector<Atom> atoms) {
         Atom atom = AO.origin_atom; // atom corresponding to the AO
 
         // term2, term3 the same—only dependent on atom, not also the orbital
-        term2 = (atom.Z_ - 0.5)* gamma_AB(atom, atom);
+        term2 = (atom.Z_ - 0.5)*gamma_AB(atom, atom);
         for (auto& atom2 : atoms) {
             term3 += atom2.Z_*gamma_AB(atom,atom2);
         }
@@ -86,6 +86,11 @@ arma::mat h(std::vector<Atom> atoms) {
         } else if (AO.L == 1) { // the AO we're on is a p AO (L=1)
             term1 = atom.IA_p;
         }
+
+//        std::cout << term1 << std::endl;
+//        std::cout << term2 << std::endl;
+//        std::cout << term3 << std::endl;
+
 
         final_h(i,i) = -term1-term2-term3;
 
@@ -336,14 +341,21 @@ arma::mat F_alpha(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P
 
         Atom atom = AO.origin_atom; // atom corresponding to the AO
 
+        arma::mat P_total = P_AA(atoms, P_alpha, P_beta);
+
         // term2, term3 only depend on the AO and the atom, not the L of the AO
 
         // P_AA is a VECTOR of electron density per ATOM ... so the question is, which NUMBER atom are we on??
-        term2 = ((P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom.Z_) - (P_alpha(i,i) - 0.5))*gamma_AB(atom,atom); // indexing problem is with P_AA - which number atom are we on???
-        for (auto& atom2 : atoms) {
-            term3 += (P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom2.Z_)*gamma_AB(atom,atom2);
+        term2 = ((P_total[j] - atom.Z_) - (P_alpha(i,i) - 0.5))*gamma_AB(atom,atom); // indexing problem is with P_AA - which number atom are we on???
+
+
+        // For calculating term 3, need this extra k index, which tells me which atom in the atoms vector that atom2 is (atom2's index), which tells me what value from P_AA to extract!
+        for (int k = 0; k < atoms.size(); k++) {
+            Atom atom2 = atoms[k];
+            term3 += (P_total[k] - atom2.Z_)*gamma_AB(atom,atom2);
         }
-        term3 -= (P_AA(atoms, P_alpha, P_beta)[floor(j)] - atom.Z_)*gamma_AB(atom,atom);; // get rid of the unnecessary term from for loop above
+        term3 -= (P_total[j] - atom.Z_)*gamma_AB(atom,atom);; // get rid of the unnecessary term from for loop above
+
 
         // term1 is a bit more complicated, we need to care about the orbital angular momentum too (s or p)
         if (AO.L == 0) { // the AO we're on is an s AO
@@ -352,12 +364,16 @@ arma::mat F_alpha(const std::vector<Atom> &atoms, arma::mat P_alpha, arma::mat P
             term1 = atom.IA_p;
         }
 
+
+
         final_F(i,i) = -term1+term2+term3;
 
         // j index tracks the atom we're on
         // if we just looked at H atom, then we go to the NEXT atom (b/c H will only have 1 AO)
-        // if we just looked at C,N,O,F, then we go to the next AO, but stay at the same atom (so just add 1/4 to j, so that after 4 runs, we would be at the next atom!)
-        j += 1 / atom.cGTOs.size();
+        // if we just looked at C,N,O,F, then we go to the next AO, but stay at the same atom
+        if (atom.A == 1) {
+            j += 1;
+        }
 
         // i index tracks the AO we're on
         i += 1;

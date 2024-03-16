@@ -27,6 +27,7 @@ std::vector<AO> atoms_to_AOs(const std::vector<Atom> &Atoms);
 // Gives the number of alpha and beta electrons (p and q) in a molecule
 int count_alpha_electrons(const std::vector<Atom> &Atoms);
 int count_beta_electrons(const std::vector<Atom> &Atoms);
+int count_total_electrons(const std::vector<Atom> &Atoms);
 
 // Return matrix elements and matrix for gamma
 double gamma_AB(Atom A, Atom B);
@@ -36,7 +37,7 @@ arma::mat gamma_matrix(std::vector<Atom> atoms);
 arma::mat S(const std::vector<Atom> &Atoms);
 
 // Compute a core, 1-electron Hamiltonian; currently only works for two atoms
-arma::mat h(std::vector<Atom> atoms);
+arma::mat h(const std::vector<Atom> &atoms);
 
 
 // Function that takes in MO coefficient matrix for alpha, a number of alpha electrons, returns the rectangular occupied coefficient matrix

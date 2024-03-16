@@ -5,10 +5,8 @@
 #include "Diag_Conv.h"
 
 arma::mat find_MO_coefs(arma::mat F) {
-
     arma::vec energies;
     arma::mat C;
-
     arma::eig_sym(energies, C, F); // can use eig_sym because F is guranteed to be symmetric
 
     return C;
@@ -156,4 +154,59 @@ iteration_data converge_CNDO2(const iteration_data &it_data) {
 
     return converge_CNDO2(new_it_data);
 
+}
+
+// Calculate energy eigenvalues of a converged Fock matrix
+arma::vec get_energy_eigs(arma::mat F) {
+    arma::vec energies;
+    arma::mat C;
+    arma::eig_sym(energies, C, F); // can use eig_sym because F is guaranteed to be symmetric
+
+    return energies;
+}
+
+
+// Calculate distance between two atoms
+double atom_distance(const Atom &A, const Atom &B) {
+    return sqrt(pow((A.X - B.X),2) + pow((A.Y - B.Y),2) + pow((A.Z - B.Z),2));
+}
+
+// Calculate nuclear repulsion energy for set of atoms
+double nuc_repl_energy(const std::vector<Atom> &atoms) {
+    double sum=0;
+    for (auto& A : atoms) {
+        for (auto& B : atoms) {
+            if (A.X == B.X and A.Y == B.Y and A.Z == B.Z) { // check if they're the same atom
+                sum += 0;
+            } else {
+                double R_AB = atom_distance(A,B);
+                sum += A.Z_*B.Z_ / R_AB;
+            }
+        }
+    }
+    return sum * 27.211 / 2; // multiply by eV/a.u. ratio, divide by 2 to eliminate double counting
+}
+
+
+// Calculate electron energy from converged density and Fock matrices
+double electron_repl_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core) {
+
+    int matrix_length = sqrt(F_alpha.size());
+
+    // Iterating through indices of the matrices
+    double alpha_term=0, beta_term=0;
+    for (int u=0; u < matrix_length; u++) {
+        for (int v=0; v < matrix_length; v++) {
+            alpha_term += P_alpha(u,v)*(H_core(u,v)+F_alpha(u,v));
+            beta_term += P_beta(u,v)*(H_core(u,v)+F_beta(u,v));
+        }
+    }
+
+    return (alpha_term+beta_term) / 2;
+}
+
+
+// Calculate total energy of a converged system (sum of nuclear repulsion and electron energies)
+double total_energy(double nuc_repl_e, double elec_repl_e) {
+    return nuc_repl_e+elec_repl_e;
 }
