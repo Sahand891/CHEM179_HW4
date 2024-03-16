@@ -18,6 +18,9 @@ struct iteration_data {
 
     std::vector<Atom> atoms;
 
+    int p;
+    int q;
+
     arma::mat P_alpha_old;
     arma::mat P_beta_old;
 
@@ -42,8 +45,7 @@ struct iteration_data {
     arma::mat overlap = S(atoms);
     arma::mat H_core = h(atoms);
 
-    int p = count_alpha_electrons(atoms);
-    int q = count_beta_electrons(atoms);
+
 
 };
 
@@ -52,13 +54,14 @@ arma::mat find_MO_coefs(arma::mat F);
 arma::vec get_energy_eigs(arma::mat F);
 
 
-iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print=false);
+iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print=false, bool auto_electrons=true, int p_input=0, int q_input=0);
 // Stores a vector of iteration data, which can then be put in an output file nicely!!
 std::vector<iteration_data> converge_CNDO2(const iteration_data &it_data, std::vector<iteration_data> &it_data_vec, bool do_print=false);
 
 
 double nuc_repl_energy(const std::vector<Atom> &atoms);
-double electron_repl_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core);
+double electron_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core);
+double compute_total_energy(const iteration_data &conv_it_data);
 
 
 void write_CNDO2_to_file(std::string output_location, iteration_data &starting_it_data, std::vector<iteration_data> &it_data_vec);

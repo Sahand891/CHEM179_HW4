@@ -47,7 +47,7 @@ double nuc_repl_energy(const std::vector<Atom> &atoms) {
 
 
 // Calculate electron energy from converged density and Fock matrices
-double electron_repl_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core) {
+double electron_energy(const arma::mat &F_alpha, const arma::mat &F_beta, const arma::mat &P_alpha, const arma::mat &P_beta, const arma::mat &H_core) {
 
     int matrix_length = sqrt(F_alpha.size());
 
@@ -65,13 +65,17 @@ double electron_repl_energy(const arma::mat &F_alpha, const arma::mat &F_beta, c
 
 
 // Calculate total energy of a converged system (sum of nuclear repulsion and electron energies)
-double total_energy(double nuc_repl_e, double elec_repl_e) {
-    return nuc_repl_e+elec_repl_e;
+double compute_total_energy(const iteration_data &conv_it_data) {
+
+    double nucl_rep_energy = nuc_repl_energy(conv_it_data.atoms);
+    double electron_e = electron_energy(conv_it_data.fock_alpha, conv_it_data.fock_beta, conv_it_data.P_alpha_new, conv_it_data.P_beta_new, conv_it_data.H_core);
+
+    return nucl_rep_energy+electron_e;
 }
 
 
 // This function starts CNDO2 density matrix optimization with an initial guess of the core Hamiltonian matrix, and also prints out the 0th iteration
-iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print) {
+iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print, bool auto_electrons, int p_input, int q_input) {
 
     arma::mat gamma = gamma_matrix(atoms);
 
@@ -81,8 +85,13 @@ iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print) {
 
     // Compute appropriate matrices to input into iteration_data object
 
-    int p = count_alpha_electrons(atoms);
-    int q = count_beta_electrons(atoms);
+    int p = p_input;
+    int q = q_input;
+
+    if (auto_electrons) { // automatically calculate # of alpha and beta electrons if so specified
+        p = count_alpha_electrons(atoms);
+        q = count_beta_electrons(atoms);
+    }
 
     // C_alpha = C_beta = C for the zeroth iteration since we're using core Hamiltonian to start
 
@@ -99,6 +108,8 @@ iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print) {
     // We won't even use P_alpha_old and P_beta_old in the 0th iteration anyway
 
     iteration_data it_data = {atoms,
+                              p,
+                              q,
                               arma::mat(1,1,arma::fill::zeros),
                               arma::mat(1,1,arma::fill::zeros),
                               H_core,
@@ -107,7 +118,7 @@ iteration_data start_CNDO2(const std::vector<Atom> &atoms, bool do_print) {
                               C,
                               P_a,
                               P_b,
-                              1,
+                              0,
                               false};
 
 
@@ -184,6 +195,8 @@ std::vector<iteration_data> converge_CNDO2(const iteration_data &it_data, std::v
 
     // Compile all the appropriate info into a new iteration_data object
     iteration_data new_it_data = {atoms,
+                                  p,
+                                  q,
                                   P_alpha_old,
                                   P_beta_old,
                                   Fock_alpha,
@@ -244,24 +257,6 @@ void write_CNDO2_to_file(std::string output_location, iteration_data &starting_i
     outFile << "p = " << starting_it_data.p << " q = " << starting_it_data.q << std::endl;
     outFile << "H_core" << std::endl;
     starting_it_data.fock_alpha.print(outFile);
-    // Printing out zeroth iteration
-    outFile << "Iteration: 0" << std::endl;
-    outFile << "Fa" << std::endl;
-    starting_it_data.fock_alpha.print(outFile);
-    outFile << "Fb" << std::endl;
-    starting_it_data.fock_beta.print(outFile);
-    outFile << "After solving the eigenvalue equation: " << std::endl;
-    outFile << "Ca" << std::endl;
-    starting_it_data.C_alpha_new.print(outFile);
-    outFile << "Cb" << std::endl;
-    starting_it_data.C_beta_new.print(outFile);
-    outFile << "p = " << starting_it_data.p << " q = " << starting_it_data.q << std::endl;
-    outFile << "Pa_new" << std::endl;
-    starting_it_data.P_alpha_new.print(outFile);
-    outFile << "Pb_new" << std::endl;
-    starting_it_data.P_beta_new.print(outFile);
-    outFile << "P_total" << std::endl;
-    P_AA(starting_it_data.atoms, starting_it_data.P_alpha_new, starting_it_data.P_beta_new).print(outFile);
 
     // Now print out all the iteration data!
     for (auto& it_data : it_data_vec) {
@@ -291,7 +286,7 @@ void write_CNDO2_to_file(std::string output_location, iteration_data &starting_i
     arma::mat Eb = get_energy_eigs(conv_data.fock_beta);
 
     double nuc_repl_e = nuc_repl_energy(conv_data.atoms);
-    double electron_e = electron_repl_energy(conv_data.fock_alpha, conv_data.fock_beta, conv_data.P_alpha_new, conv_data.P_beta_new, conv_data.H_core);
+    double electron_e = electron_energy(conv_data.fock_alpha, conv_data.fock_beta, conv_data.P_alpha_new, conv_data.P_beta_new, conv_data.H_core);
 
     outFile << "\nFinal Converged Molecule:" << std::endl;
     outFile << "Ea (Energy eigenvalue matrix for alpha electrons)" << std::endl;

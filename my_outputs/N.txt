@@ -1,0 +1,108 @@
+Gamma Matrix
+   19.2721
+Overlap Matrix
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+p = 4 q = 1
+H_core
+  -1.0604e+02            0            0            0
+            0  -9.3999e+01            0            0
+            0            0  -9.3999e+01            0
+            0            0            0  -9.3999e+01
+Iteration: 0
+Fa
+  -1.0604e+02            0            0            0
+            0  -9.3999e+01            0            0
+            0            0  -9.3999e+01            0
+            0            0            0  -9.3999e+01
+Fb
+  -1.0604e+02            0            0            0
+            0  -9.3999e+01            0            0
+            0            0  -9.3999e+01            0
+            0            0            0  -9.3999e+01
+After solving the eigenvalue equation: 
+Ca
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Cb
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+p = 4 q = 1
+Pa_new
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Pb_new
+   1.0000        0        0        0
+        0        0        0        0
+        0        0        0        0
+        0        0        0        0
+P_total
+   5.0000
+Iteration: 1
+Fa
+  -28.9520         0         0         0
+         0  -16.9110         0         0
+         0         0  -16.9110         0
+         0         0         0  -16.9110
+Fb
+  -28.9520         0         0         0
+         0    2.3610         0         0
+         0         0    2.3610         0
+         0         0         0    2.3610
+After solving the eigenvalue equation: 
+Ca
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Cb
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+p = 4 q = 1
+Pa_new
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Pb_new
+   1.0000        0        0        0
+        0        0        0        0
+        0        0        0        0
+        0        0        0        0
+P_total
+   5.0000
+
+Final Converged Molecule:
+Ea (Energy eigenvalue matrix for alpha electrons)
+  -28.9520
+  -16.9110
+  -16.9110
+  -16.9110
+Eb (Energy eigenvalue matrix for beta electrons)
+  -28.9520
+    2.3610
+    2.3610
+    2.3610
+Ca (MO coefficient matrix for alpha electrons)
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Cb (MO coefficient matrix for beta electrons)
+   1.0000        0        0        0
+        0   1.0000        0        0
+        0        0   1.0000        0
+        0        0        0   1.0000
+Nuclear Repulsion Energy: 0 eV
+Electron Energy: -301.358 eV
+This molecule has energy: -301.358 eV

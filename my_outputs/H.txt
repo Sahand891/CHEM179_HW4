@@ -1,0 +1,54 @@
+Gamma Matrix
+   21.0778
+Overlap Matrix
+   1.0000
+p = 1 q = 0
+H_core
+  -17.7149
+Iteration: 0
+Fa
+  -17.7149
+Fb
+  -17.7149
+After solving the eigenvalue equation: 
+Ca
+   1.0000
+Cb
+   1.0000
+p = 1 q = 0
+Pa_new
+   1.0000
+Pb_new
+        0
+P_total
+   1.0000
+Iteration: 1
+Fa
+  -17.7149
+Fb
+   3.3629
+After solving the eigenvalue equation: 
+Ca
+   1.0000
+Cb
+   1.0000
+p = 1 q = 0
+Pa_new
+   1.0000
+Pb_new
+        0
+P_total
+   1.0000
+
+Final Converged Molecule:
+Ea (Energy eigenvalue matrix for alpha electrons)
+  -17.7149
+Eb (Energy eigenvalue matrix for beta electrons)
+   3.3629
+Ca (MO coefficient matrix for alpha electrons)
+   1.0000
+Cb (MO coefficient matrix for beta electrons)
+   1.0000
+Nuclear Repulsion Energy: 0 eV
+Electron Energy: -17.7149 eV
+This molecule has energy: -17.7149 eV

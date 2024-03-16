@@ -32,7 +32,7 @@ Pb_new
 P_total
    1.0000
    1.0000
-Iteration: 2
+Iteration: 1
 Fa
    -7.1760  -13.6939
   -13.6939   -7.1760
